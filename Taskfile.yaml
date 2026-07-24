@@ -1,0 +1,202 @@
+version: "3"
+
+dotenv:
+  - ".env"
+
+tasks:
+  default:
+    desc: "Run default task"
+    cmds:
+      - task: "build"
+
+  init:
+    desc: "Initialize project"
+    cmds:
+      - task: "init:env"
+
+  init:env:
+    desc: "Initialize project environment variables"
+    cmds:
+      - |
+        cat <<EOF > .env
+        CLOUDFLARE_PROJECT_NAME="{{ .CLOUDFLARE_PROJECT_NAME }}"
+
+        CLOUDFLARE_ACCOUNT_ID="{{ .CLOUDFLARE_ACCOUNT_ID }}"
+        CLOUDFLARE_API_TOKEN="{{ .CLOUDFLARE_API_TOKEN }}"
+        EOF
+    requires:
+      vars:
+        - "CLOUDFLARE_ACCOUNT_ID"
+
+        - "CLOUDFLARE_API_TOKEN"
+        - "CLOUDFLARE_PROJECT_NAME"
+
+  install:
+    desc: "Install dependencies"
+    cmds:
+      - task: "install:pnpm"
+
+  install:pnpm:
+    desc: "Install dependencies with pnpm"
+    sources:
+      - "package.json"
+      - "pnpm-lock.yaml"
+    generates:
+      - "node_modules/.modules.yaml"
+    cmds:
+      - "pnpm install"
+    run: "when_changed"
+
+  dev:
+    desc: "Run development server"
+    cmds:
+      - task: "dev:slidev"
+
+  dev:slidev:
+    desc: "Run development server with Slidev"
+    deps:
+      - task: "install:pnpm"
+    cmds:
+      - "pnpm run dev:slidev"
+
+  build:
+    desc: "Build project"
+    cmds:
+      - task: "build:slidev"
+
+  build:slidev:
+    desc: "Build project with Slidev"
+    deps:
+      - task: "install:pnpm"
+    sources:
+      - "components/**/*"
+      - "pages/**/*"
+      - "snippets/**/*"
+      - "theme/**/*"
+      - "package.json"
+      - "slides.md"
+    generates:
+      - "dist/**/*"
+    cmds:
+      - "pnpm run build:slidev"
+
+  export:
+    desc: "Export project"
+    cmds:
+      - task: "export:slidev"
+
+  export:slidev:
+    desc: "Export project with Slidev"
+    deps:
+      - task: "build:slidev"
+    cmds:
+      - "pnpm run export:slidev"
+
+  check:
+    desc: "Check project"
+    deps:
+      - task: "install"
+    cmds:
+      - task: "check:oxfmt"
+
+  check:oxfmt:
+    desc: "Check project with Oxfmt"
+    deps:
+      - task: "install:pnpm"
+    cmds:
+      - "pnpm run check:oxfmt"
+
+  lint:
+    desc: "Lint project"
+    cmds:
+      - task: "lint:oxlint"
+
+  lint:oxlint:
+    desc: "Lint project with Oxlint"
+    deps:
+      - task: "install:pnpm"
+    cmds:
+      - "pnpm run lint:oxlint"
+
+  lint:fix:
+    desc: "Lint project and fix issues"
+    cmds:
+      - task: "lint:oxlint:fix"
+
+  lint:oxlint:fix:
+    desc: "Lint project and fix issues with Oxlint"
+    deps:
+      - task: "install:pnpm"
+    cmds:
+      - "pnpm run lint:oxlint:fix"
+
+  format:
+    desc: "Format project"
+    cmds:
+      - task: "format:nix"
+      - task: "format:oxfmt"
+      - task: "format:slidev"
+
+  format:nix:
+    desc: "Format project with Nix"
+    sources:
+      - "**/*.nix"
+    cmds:
+      - "nix fmt"
+
+  format:oxfmt:
+    desc: "Format project with Oxfmt"
+    deps:
+      - task: "install:pnpm"
+    cmds:
+      - "pnpm run format:oxfmt"
+
+  format:slidev:
+    desc: "Format project with Slidev"
+    deps:
+      - task: "install:pnpm"
+    cmds:
+      - "pnpm run format:slidev"
+
+  deploy:
+    desc: "Deploy project"
+    cmds:
+      - task: "deploy:wrangler"
+
+  deploy:wrangler:
+    desc: "Deploy project with Wrangler"
+    deps:
+      - task: "install"
+      - task: "check"
+      - task: "lint"
+      - task: "build"
+    cmds:
+      - "pnpm run deploy:wrangler"
+    requires:
+      vars:
+        - "CLOUDFLARE_PROJECT_NAME"
+
+        - "CLOUDFLARE_ACCOUNT_ID"
+        - "CLOUDFLARE_API_TOKEN"
+
+  clean:
+    desc: "Clean project"
+    cmds:
+      - task: "clean:task"
+      - task: "clean:pnpm"
+      - task: "clean:slidev"
+
+  clean:task:
+    desc: "Clean project '.task/' directory"
+    cmds:
+      - "rm --recursive --force .task/"
+
+  clean:pnpm:
+    desc: "Clean project 'node_modules/' and '.pnpm-store/' directories"
+    cmds:
+      - "rm --recursive --force node_modules/ .pnpm-store/"
+
+  clean:slidev:
+    desc: "Clean project 'dist/' directory"
+    cmds:
+      - "rm --recursive --force dist/"

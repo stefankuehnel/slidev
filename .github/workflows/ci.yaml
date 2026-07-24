@@ -1,0 +1,43 @@
+name: "CI"
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: "read"
+
+jobs:
+  nix:
+    runs-on: "ubuntu-latest"
+    container:
+      image: "docker.io/nixos/nix@sha256:b9c9611c8530fa8049a1215b20638536e1e71dcaf85212e47845112caf3adeea" # v2.34.0
+      env:
+        NIX_CONFIG: "experimental-features = nix-command flakes"
+
+    steps:
+      - name: "GitHub: Checkout Repository"
+        run: |
+          git init --quiet --initial-branch "main"
+          git config --global --add safe.directory "*"
+          git remote add origin "${{ github.server_url }}/${{ github.repository }}"
+          git config --local http.${{ github.server_url }}/.extraheader "Authorization: basic $(echo -n "x-access-token:${{ github.token }}" | base64 --wrap=0)"
+          git fetch --quiet --no-tags --depth=1 origin "${{ github.ref }}"
+          git checkout --quiet "${{ github.sha }}"
+      - name: "Task: Deploy"
+        shell: >
+          nix develop
+          --ignore-env
+          --keep-env-var CI
+          --keep-env-var CLOUDFLARE_ACCOUNT_ID
+          --keep-env-var CLOUDFLARE_API_TOKEN
+          --keep-env-var CLOUDFLARE_PROJECT_NAME
+          .#ciEnvironment
+          -c bash -e {0}
+        run: "task deploy"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"
+          CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN }}"
+
+          CLOUDFLARE_PROJECT_NAME: "${{ vars.CLOUDFLARE_PROJECT_NAME }}"

@@ -1,0 +1,27 @@
+{
+  "name": "slidev",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:slidev": "slidev build",
+    "check:oxfmt": "oxfmt --check",
+    "deploy:wrangler": "wrangler pages deploy dist --project-name=\"$CLOUDFLARE_PROJECT_NAME\"",
+    "dev:slidev": "slidev --open --remote",
+    "export:slidev": "slidev export",
+    "format:oxfmt": "oxfmt",
+    "format:slidev": "slidev format",
+    "lint:oxlint": "oxlint",
+    "lint:oxlint:fix": "oxlint --fix-dangerously"
+  },
+  "dependencies": {
+    "@slidev/cli": "^52.18.0",
+    "@slidev/theme-default": "latest",
+    "@slidev/theme-seriph": "latest",
+    "vue": "^3.5.33"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.60.0",
+    "oxlint": "^1.75.0",
+    "wrangler": "^4.114.0"
+  }
+}
